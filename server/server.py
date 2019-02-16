@@ -3,6 +3,9 @@ from flask_login import LoginManager, login_required, login_user, logout_user
 from components.users import User
 app = Flask(__name__)
 
+global number_of_users
+number_of_users = 1
+users = {}
 # config
 app.config.update(
     DEBUG=True,
@@ -18,6 +21,29 @@ login_manager.login_view = "login"
 @app.route("/", methods=["POST", "GET"])
 @app.route("/home", methods=["POST", "GET"])
 def home():
+    return render_template("index.html")
+
+
+@app.route("/user/<username>", methods=["POST", "GET"])
+@login_required
+def my_profile(username):
+    user = users.get
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.route("/signup", methods=["POST", "GET"])
+def signup():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        new_user = User(number_of_users, username, password)
+        users[username] = new_user
+        number_of_users += 1
+        return "congrats"
     return render_template("index.html")
 
 
