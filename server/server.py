@@ -1,21 +1,60 @@
-from flask import Flask, Response, redirect, url_for, request, session, abort, render_template
-from flask_login import LoginManager, login_required, login_user, logout_user
-from components.users import User
+
+
+from flask import Flask, request, abort, redirect, Response, url_for, render_template
+from flask_login import LoginManager, login_required, UserMixin, login_user
+
 app = Flask(__name__)
-
-global number_of_users
-number_of_users = 1
-users = {}
-# config
-app.config.update(
-    DEBUG=True,
-    SECRET_KEY='secret_xxx'
-)
-
-# flask-login
+app.config['SECRET_KEY'] = 'secret_key'
 login_manager = LoginManager()
-login_manager.init_app(app)
 login_manager.login_view = "login"
+login_manager.init_app(app)
+
+
+class User(UserMixin):
+    def __init__(self, username, password, id, active=True):
+        self.id = id
+        self.username = username
+        self.password = password
+        self.active = active
+        self.email = None
+        self.number = None
+        self.bussines_name = None
+        self.name = None
+        self.picture = None
+
+    def get_id(self):
+        return self.id
+
+    def is_active(self):
+        return self.active
+
+    def get_auth_token(self):
+        return make_secure_token(self.username, key='secret_key')
+
+
+class UsersRepository:
+
+    def __init__(self):
+        self.users = dict()
+        self.users_id_dict = dict()
+        self.identifier = 0
+
+    def save_user(self, user):
+        self.users_id_dict.setdefault(user.id, user)
+        self.users.setdefault(user.username, user)
+
+    def get_user(self, username):
+        return self.users.get(username, None)
+
+    def get_user_by_id(self, userid):
+        return self.users_id_dict.get(userid)
+
+    def next_index(self):
+        self.identifier += 1
+        return self.identifier
+
+
+users_repository = UsersRepository()
 
 
 @app.route("/", methods=["POST", "GET"])
@@ -24,58 +63,63 @@ def home():
     return render_template("index.html")
 
 
-@app.route("/user/<username>", methods=["POST", "GET"])
-@login_required
-def my_profile(username):
-    user = users.get
-
-
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-
-@app.route("/signup", methods=["POST", "GET"])
-def signup():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        new_user = User(number_of_users, username, password)
-        users[username] = new_user
-        number_of_users += 1
-        return "congrats"
-    return render_template("index.html")
-
-
-@app.route("/login", methods=["GET", "POST"])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if password == username + "_secret":
-            id = username.split('user')[1]
-            user = User(id)
-            login_user(user)
-            return redirect(request.args.get("next"))
+        registeredUser = users_repository.get_user(username)
+        if registeredUser:
+            print('Users ' + str(users_repository.users))
+            print('Register user %s , password %s' %
+                  (registeredUser.username, registeredUser.password))
+            if registeredUser != None and registeredUser.password == password:
+                print('Logged in..')
+                login_user(registeredUser)
+                return redirect(url_for('home'))
         else:
             return abort(401)
     else:
         return Response('''
-        <form action="" method="post">
-            <p><input type=text name=username>
-            <p><input type=password name=password>
-            <p><input type=submit value=Login>
-        </form>
+            <form action="" method="post">
+                <p><input type=text name=username>
+                <p><input type=password name=password>
+                <p><input type=submit value=Login>
+            </form>
         ''')
 
 
-# somewhere to logout
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return Response('<p>Logged out</p>')
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        new_user = User(username, password, users_repository.next_index())
+        users_repository.save_user(new_user)
+        return Response("Registered Successfully")
+    else:
+        return Response('''
+            <form action="" method="post">
+            <p><input type=text name=username placeholder="Enter username">
+            <p><input type=password name=password placeholder="Enter password">
+            <p><input type=submit value=Login>
+            </form>
+        ''')
+
+# handle login failed
+@app.errorhandler(401)
+def failed_log_in(e):
+    return Response('<p>Login failed</p>')
 
 
-if __name__ == "__main__":
-    app.run()
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('<p>Login failed</p>')
+# callback to reload the user object
+@login_manager.user_loader
+def load_user(userid):
+    return users_repository.get_user_by_id(userid)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

@@ -1,45 +1,4 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="{{ url_for('static',filename='styles/index.css') }}"
-    >
-
-    <title>Sketch Coin</title>
-  </head>
-<body>
-
-<div id="rc_logo">
-<a href="#home" title="Logo">LOGO</a> <!-- Swap this placeholder out for your logo image -->
-</div>
-
-<div class="rc_nav" id="centered_nav">
-<a href="#home" title="Home">Home</a>
-<a href="#login" title="LogIn">LogIn</a>
-<a href="#signup" title="SignUp">SignUp</a>
-<a href="#about" title="About">About</a>
-<a href="#apply" title="Apply">Apply</a>
-<a href="#logout" title="LogOut">LogOut</a>
-
-<a href="javascript:void(0);" title="Menu" style="font-size:18px;" class="icon" onclick="myFunction()">&#9776;</a>
-</div>
-
-
-<div class="rc_content">
-  <h3>Responsive Centered Navigation Menu</h3>
-  <p><--- Resize the browser window to see the menu respond ---></p>
-</div>
-<script>
-function navBar() {
-    var x = document.getElementById("centered_nav");
-    if (x.className === "rc_nav") {
-        x.className += " responsive";
-    } else {
-        x.className = "rc_nav";
-    }
-}
-</script>
-  </body>
-</html>
+﻿{% extends "layout.html" %} 
+{% block body %} 
+profile
+ {% endblock %}
